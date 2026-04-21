@@ -1,0 +1,12 @@
+{
+  "name": "hburgbot",
+  "version": "1.0.0",
+  "description": "AI Telegram Bot powered by Gemini",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
