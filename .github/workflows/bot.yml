@@ -17,3 +17,5 @@ jobs:
         env:
           BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
           GEMINI_KEY: ${{ secrets.GEMINI_KEY }}
+          GEMINI_MODEL: gemini-1.5-flash
+
