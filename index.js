@@ -3,7 +3,7 @@ const http = require("http");
 
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const GEMINI_KEY = process.env.GEMINI_KEY;
-const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-1.5-flash";
+const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-pro";
 const PERSONA_NAME = process.env.PERSONA_NAME || "سيموني";
 const SYSTEM_PROMPT = process.env.SYSTEM_PROMPT || "أنت سيموني، بوت ذكي وجريء في مجموعة تيليغرام. ترد على كل رسالة بأسلوب عراقي مضحوك وشبابي. كن مسلياً وذكياً. اختصر ردودك بجملة أو جملتين.";
 
@@ -51,9 +51,11 @@ async function askGemini(userText, fromName) {
       generationConfig: { maxOutputTokens: 300, temperature: 0.9 }
     })
   });
-  console.log("GEMINI RESPONSE:", JSON.stringify(res).slice(0, 200));
-  if (!res.candidates) return "اه اه اه اه اه اه اه اه اه";
-  return res.candidates[0].content.parts[0].text || "...";
+  if (!res.candidates) {
+    console.error("GEMINI ERROR:", JSON.stringify(res).slice(0, 200));
+    return null;
+  }
+  return res.candidates[0].content.parts[0].text || null;
 }
 
 async function poll() {
@@ -72,12 +74,21 @@ async function poll() {
       const chatId = msg.chat.id;
       const text = msg.text;
       console.log(`[MSG] ${from}: ${text}`);
-      try {
-        const reply = await askGemini(text, from);
-        await sendMessage(chatId, reply);
-        console.log(`[REPLY] ${reply}`);
-      } catch (e) {
-        console.error("[AI ERROR]", e.message);
+
+      // أرسل 10 ردود
+      for (let i = 0; i < 10; i++) {
+        try {
+          const reply = await askGemini(text, from);
+          if (reply) {
+            await sendMessage(chatId, reply);
+            console.log(`[REPLY ${i+1}] ${reply}`);
+          } else {
+            await sendMessage(chatId, "اه اه اه ");
+          }
+          await new Promise(r => setTimeout(r, 500));
+        } catch (e) {
+          console.error("[AI ERROR]", e.message);
+        }
       }
     }
   } catch (e) {
@@ -93,5 +104,6 @@ http.createServer((req, res) => {
   console.log("✅ HburgBot started!");
   poll();
 });
+
 
 
