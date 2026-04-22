@@ -51,7 +51,9 @@ async function askGemini(userText, fromName) {
       generationConfig: { maxOutputTokens: 300, temperature: 0.9 }
     })
   });
-  return res.candidates?.[0]?.content?.parts?.[0]?.text || "...";
+  console.log("GEMINI RESPONSE:", JSON.stringify(res));
+  if (!res.candidates) return "خطأ من Gemini";
+  return res.candidates[0].content.parts[0].text || "...";
 }
 
 async function poll() {
@@ -93,3 +95,4 @@ http.createServer((req, res) => {
   console.log("✅ HburgBot started!");
   poll();
 });
+
