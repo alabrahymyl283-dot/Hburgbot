@@ -53,9 +53,9 @@ async function askGemini(userText, fromName) {
   });
   if (!res.candidates) {
     console.error("GEMINI ERROR:", JSON.stringify(res).slice(0, 200));
-    return null;
+    return "اه اه اه ";
   }
-  return res.candidates[0].content.parts[0].text || null;
+  return res.candidates[0].content.parts[0].text || "...";
 }
 
 async function poll() {
@@ -75,21 +75,12 @@ async function poll() {
       const text = msg.text;
       console.log(`[MSG] ${from}: ${text}`);
 
-      // أرسل 10 ردود
-      for (let i = 0; i < 10; i++) {
-        try {
-          const reply = await askGemini(text, from);
-          if (reply) {
-            await sendMessage(chatId, reply);
-            console.log(`[REPLY ${i+1}] ${reply}`);
-          } else {
-            await sendMessage(chatId, "اه اه اه ");
-          }
-          await new Promise(r => setTimeout(r, 500));
-        } catch (e) {
-          console.error("[AI ERROR]", e.message);
-        }
-      }
+      // 10 ردود بالتوازي بدون تأخير
+      const promises = Array.from({ length: 10 }, () =>
+        askGemini(text, from).then(reply => sendMessage(chatId, reply))
+      );
+      await Promise.all(promises);
+      console.log("[DONE] سكس");
     }
   } catch (e) {
     console.error("[POLL ERROR]", e.message);
@@ -104,6 +95,7 @@ http.createServer((req, res) => {
   console.log("✅ HburgBot started!");
   poll();
 });
+
 
 
 
