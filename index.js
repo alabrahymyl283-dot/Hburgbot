@@ -3,7 +3,7 @@ const http = require("http");
 
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const GEMINI_KEY = process.env.GEMINI_KEY;
-const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.0-flash";
+const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-1.5-flash";
 const PERSONA_NAME = process.env.PERSONA_NAME || "سيموني";
 const SYSTEM_PROMPT = process.env.SYSTEM_PROMPT || "أنت سيموني، بوت ذكي وجريء في مجموعة تيليغرام. ترد على كل رسالة بأسلوب عراقي مضحوك وشبابي. كن مسلياً وذكياً. اختصر ردودك بجملة أو جملتين.";
 
@@ -42,7 +42,7 @@ async function sendMessage(chatId, text) {
 
 async function askGemini(userText, fromName) {
   const prompt = `${SYSTEM_PROMPT}\nاسمك ${PERSONA_NAME}. رد بالعربي العراقي. اختصر ردك.\n\n${fromName} قال: "${userText}"`;
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_KEY}`;
+  const url = `https://generativelanguage.googleapis.com/v1/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_KEY}`;
   const res = await fetchJSON(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -51,7 +51,7 @@ async function askGemini(userText, fromName) {
       generationConfig: { maxOutputTokens: 300, temperature: 0.9 }
     })
   });
-  console.log("GEMINI RESPONSE:", JSON.stringify(res));
+  console.log("GEMINI RESPONSE:", JSON.stringify(res).slice(0, 200));
   if (!res.candidates) return "خطأ من Gemini";
   return res.candidates[0].content.parts[0].text || "...";
 }
@@ -61,19 +61,17 @@ async function poll() {
     const data = await getUpdates();
     if (!data.ok) {
       console.error("Telegram error:", data.description);
+      setTimeout(poll, 3000);
       return;
     }
     for (const update of data.result) {
       offset = update.update_id + 1;
       const msg = update.message;
       if (!msg || !msg.text || msg.from?.is_bot) continue;
-
       const from = msg.from?.first_name || "مستخدم";
       const chatId = msg.chat.id;
       const text = msg.text;
-
       console.log(`[MSG] ${from}: ${text}`);
-
       try {
         const reply = await askGemini(text, from);
         await sendMessage(chatId, reply);
@@ -95,4 +93,5 @@ http.createServer((req, res) => {
   console.log("✅ HburgBot started!");
   poll();
 });
+
 
