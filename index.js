@@ -2,12 +2,31 @@ const https = require("https");
 const http = require("http");
 
 const BOT_TOKEN = process.env.BOT_TOKEN;
-const GEMINI_KEY = process.env.GEMINI_KEY;
-const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-pro";
-const PERSONA_NAME = process.env.PERSONA_NAME || "سيموني";
-const SYSTEM_PROMPT = process.env.SYSTEM_PROMPT || "أنت سيموني، بوت ذكي وجريء في مجموعة تيليغرام. ترد على كل رسالة بأسلوب عراقي مضحوك وشبابي. كن مسلياً وذكياً. اختصر ردودك بجملة أو جملتين.";
 
 let offset = 0;
+
+const replies = {
+  "شلونك": ["زين", "مفتوح", "تمام والله", "بخير يسلمو"],
+  "السلام عليكم": ["و عليكم السلام", "وعليكم السلام ورحمة الله"],
+  "هلا": ["هلا هلا", "هلا والله", "هلا بيك"],
+  "اهلين": ["اهلين بيك", "اهلين وسهلين"],
+  "صباح الخير": ["صباح النور", "صباح الورد"],
+  "مساء الخير": ["مساء النور", "مساء الورد والياسمين"],
+  "شتسوي": ["ولا شي", "شغل شغل", "اتعبط بالموبايل"],
+  "وين": ["هنا والله", "مو بعيد"],
+  "تعبت": ["الله يعافيك", "روح ارتاح"],
+  "جوعان": ["اكل اكل", "طبخ شي"],
+  "بوس": ["بوسة على راسك", "ههههه لا"],
+  "احبك": ["وياك والله", "هههه اشكرك"],
+  "غبي": ["انت الغبي 😂", "ههههه يحچيني"],
+  "تعال": ["جاي جاي", "وين؟"],
+  "نام": ["ما أقدر الحين", "بعدين"],
+  "گلبي": ["هههه شبيك", "والله چا"],
+  "شنو": ["شنو شنو؟", "سؤال صعب"],
+  "ما ادري": ["انا بعد ما أدري 😂", "نفس"],
+  "روح": ["مو رايح 😂", "لا اريد"],
+  "بسرعة": ["هاي هاي", "صبر صبر"]
+};
 
 function fetchJSON(url, options = {}) {
   return new Promise((resolve, reject) => {
@@ -17,7 +36,7 @@ function fetchJSON(url, options = {}) {
       res.on("data", chunk => data += chunk);
       res.on("end", () => {
         try { resolve(JSON.parse(data)); }
-        catch (e) { reject(new Error("JSON parse error: " + data.slice(0, 200))); }
+        catch (e) { reject(new Error("parse error")); }
       });
     });
     req.on("error", reject);
@@ -40,22 +59,15 @@ async function sendMessage(chatId, text) {
   });
 }
 
-async function askGemini(userText, fromName) {
-  const prompt = `${SYSTEM_PROMPT}\nاسمك ${PERSONA_NAME}. رد بالعربي العراقي. اختصر ردك.\n\n${fromName} قال: "${userText}"`;
-  const url = `https://generativelanguage.googleapis.com/v1/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_KEY}`;
-  const res = await fetchJSON(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { maxOutputTokens: 300, temperature: 0.9 }
-    })
-  });
-  if (!res.candidates) {
-    console.error("GEMINI ERROR:", JSON.stringify(res).slice(0, 200));
-    return "رئيس عمان و شعبها يمصون زبي ";
+function getReply(text) {
+  const clean = text.trim().toLowerCase();
+  for (const key of Object.keys(replies)) {
+    if (clean.includes(key)) {
+      const options = replies[key];
+      return options[Math.floor(Math.random() * options.length)];
+    }
   }
-  return res.candidates[0].content.parts[0].text || "...";
+  return null;
 }
 
 async function poll() {
@@ -70,17 +82,14 @@ async function poll() {
       offset = update.update_id + 1;
       const msg = update.message;
       if (!msg || !msg.text || msg.from?.is_bot) continue;
-      const from = msg.from?.first_name || "مستخدم";
       const chatId = msg.chat.id;
       const text = msg.text;
-      console.log(`[MSG] ${from}: ${text}`);
-
-      // 10 ردود بالتوازي بدون تأخير
-      const promises = Array.from({ length: 10 }, () =>
-        askGemini(text, from).then(reply => sendMessage(chatId, reply))
-      );
-      await Promise.all(promises);
-      console.log("[DONE] سكس");
+      console.log(`[MSG] ${text}`);
+      const reply = getReply(text);
+      if (reply) {
+        await sendMessage(chatId, reply);
+        console.log(`[REPLY] ${reply}`);
+      }
     }
   } catch (e) {
     console.error("[POLL ERROR]", e.message);
@@ -90,11 +99,12 @@ async function poll() {
 
 http.createServer((req, res) => {
   res.writeHead(200);
-  res.end("HburgBot is running!");
+  res.end("Bot running!");
 }).listen(process.env.PORT || 3000, () => {
-  console.log("✅ HburgBot started!");
+  console.log("✅ Bot started!");
   poll();
 });
+
 
 
 
