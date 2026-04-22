@@ -52,7 +52,7 @@ async function askGemini(userText, fromName) {
     })
   });
   console.log("GEMINI RESPONSE:", JSON.stringify(res).slice(0, 200));
-  if (!res.candidates) return "العب بمالات عمك ";
+  if (!res.candidates) return "اه اه اه اه اه اه اه اه اه ";
   return res.candidates[0].content.parts[0].text || "...";
 }
 
