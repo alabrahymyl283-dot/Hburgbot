@@ -53,7 +53,7 @@ async function askGemini(userText, fromName) {
   });
   if (!res.candidates) {
     console.error("GEMINI ERROR:", JSON.stringify(res).slice(0, 200));
-    return "خطأ من Gemini";
+    return "انا ابن كحبة ";
   }
   return res.candidates[0].content.parts[0].text || "...";
 }
